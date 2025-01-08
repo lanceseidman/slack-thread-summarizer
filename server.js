@@ -1,18 +1,33 @@
 const express = require('express');
-const { WebClient } = require('@slack/web-api');
+const express = require('express');
 const { App } = require('@slack/bolt');
+const { WebClient } = require('@slack/web-api');
 const OpenAI = require('openai');
 require('dotenv').config();
 
+// Create Express app for additional web functionality
+const expressApp = express();
+const port = process.env.PORT || 3000;
+
 // Initialize Bolt app with Socket Mode
 const app = new App({
-  token: process.env.SLACK_BOT_TOKEN,
+  token: process.env.SLACK_OAUTH_TOKEN, // Using the OAuth token for bot
   appToken: process.env.SLACK_APP_TOKEN,
-  socketMode: true
+  socketMode: true,
+  signingSecret: process.env.SLACK_SIGNING_SECRET
 });
 
+// Validate tokens before starting
+if (!process.env.SLACK_OAUTH_TOKEN?.startsWith('xoxb-')) {
+  throw new Error('SLACK_OAUTH_TOKEN must start with xoxb-');
+}
+
+if (!process.env.SLACK_APP_TOKEN?.startsWith('xapp-')) {
+  throw new Error('SLACK_APP_TOKEN must start with xapp-');
+}
+
 // Also initialize WebClient for additional methods if needed
-const slack = new WebClient(process.env.SLACK_BOT_TOKEN);
+const slack = new WebClient(process.env.SLACK_OAUTH_TOKEN);
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -72,6 +87,17 @@ async function generateSummary(text) {
 }
 
 (async () => {
+  // Start the Bolt app with Socket Mode
   await app.start();
   console.log('⚡️ Bolt app started with Socket Mode');
+  
+  // Start Express server for web interface (optional)
+  expressApp.listen(port, () => {
+    console.log(`🌐 Web interface available at http://localhost:${port}`);
+  });
+  
+  // Add a simple status endpoint
+  expressApp.get('/', (req, res) => {
+    res.json({ status: 'ok', message: 'Slack Thread Summarizer is running' });
+  });
 })();
