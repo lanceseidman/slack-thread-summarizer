@@ -1,5 +1,4 @@
 const express = require('express');
-const express = require('express');
 const { App } = require('@slack/bolt');
 const { WebClient } = require('@slack/web-api');
 const OpenAI = require('openai');
